@@ -66,13 +66,17 @@ jobs:
 
       - name: Create DMG installer
         run: |
+          VERSION="${GITHUB_REF_NAME}"
           mkdir -p dmg_staging
           cp -R dist/Vocalix.app dmg_staging/
           ln -s /Applications dmg_staging/Applications
           hdiutil create -volname "Vocalix" -srcfolder dmg_staging \
-            -ov -format UDZO Vocalix-V1-macOS.dmg
+            -ov -format UDZO "Vocalix-macOS-${VERSION}.dmg"
+          cp "Vocalix-macOS-${VERSION}.dmg" Vocalix-macOS-latest.dmg
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v2
         with:
-          files: Vocalix-V1-macOS.dmg
+          files: |
+            Vocalix-macOS-${{ github.ref_name }}.dmg
+            Vocalix-macOS-latest.dmg
