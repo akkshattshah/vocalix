@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QFrame, QApplication,
 )
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont, QIcon, QPixmap
+from PyQt5.QtGui import QFont, QIcon, QKeyEvent, QPixmap
 
 from auth.session import load_session, clear_session
 from core.config import get_hotkey, set_hotkey
