@@ -6,6 +6,8 @@ _IS_MAC = sys.platform == "darwin"
 
 if _IS_MAC:
     import Quartz
+    from ApplicationServices import AXIsProcessTrustedWithOptions
+    from CoreFoundation import kCFBooleanTrue
 else:
     import keyboard
 
@@ -64,6 +66,7 @@ class HotkeyListener(QObject):
 
     start_recording = pyqtSignal()
     stop_recording = pyqtSignal()
+    permission_needed = pyqtSignal()
 
     def __init__(self, hotkey: str = "ctrl"):
         super().__init__()
@@ -116,6 +119,18 @@ class HotkeyListener(QObject):
     def _start_quartz(self):
         self._key_held = False
 
+        trusted = AXIsProcessTrustedWithOptions(
+            {"AXTrustedCheckOptionPrompt": kCFBooleanTrue}
+        )
+        if not trusted:
+            print(
+                "[vocalix] Accessibility permission not granted. "
+                "macOS should have shown a prompt.",
+                flush=True,
+            )
+            self.permission_needed.emit()
+            return
+
         mask = (
             Quartz.CGEventMaskBit(Quartz.kCGEventKeyDown)
             | Quartz.CGEventMaskBit(Quartz.kCGEventKeyUp)
@@ -133,11 +148,11 @@ class HotkeyListener(QObject):
 
         if self._tap is None:
             print(
-                "[vocalix] Failed to create event tap. "
-                "Grant Accessibility permission in System Settings > "
-                "Privacy & Security > Accessibility.",
+                "[vocalix] Failed to create event tap even though "
+                "AXIsProcessTrusted returned True. Retrying in 2s...",
                 flush=True,
             )
+            threading.Timer(2.0, self._start_quartz).start()
             return
 
         source = Quartz.CFMachPortCreateRunLoopSource(None, self._tap, 0)

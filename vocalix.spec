@@ -23,6 +23,8 @@ a = Analysis(
         "Foundation",
         "Quartz",
         "objc",
+        "ApplicationServices",
+        "CoreFoundation",
         "ui.native_overlay",
     ],
     hookspath=[],
@@ -72,5 +74,6 @@ app = BUNDLE(
         "LSUIElement": True,
         "NSMicrophoneUsageDescription": "Vocalix needs microphone access to transcribe your speech.",
         "NSAppleEventsUsageDescription": "Vocalix uses Accessibility to type text into other apps.",
+        "NSInputMonitoringUsageDescription": "Vocalix monitors keyboard input to detect your dictation hotkey.",
     },
 )

@@ -6,7 +6,7 @@ import logging
 import queue as _queue
 
 from dotenv import load_dotenv
-from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction
+from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QIcon
 
@@ -239,6 +239,34 @@ def main():
     recorder.finished.connect(lambda p: _dispatch.put((on_wav_ready, (p,))))
     recorder.discarded.connect(lambda: _dispatch.put((on_discarded, ())))
 
+    def on_permission_needed():
+        msg = QMessageBox()
+        msg.setWindowTitle("Vocalix — Permission Required")
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText("Vocalix needs Accessibility permission to detect the hotkey globally.")
+        msg.setInformativeText(
+            "1. Open System Settings → Privacy & Security → Accessibility\n"
+            "2. Find Vocalix and toggle it ON\n"
+            "3. Click Retry below\n\n"
+            "Without this permission the hotkey will only work when "
+            "the Vocalix window is focused."
+        )
+        open_btn = msg.addButton("Open Settings", QMessageBox.ActionRole)
+        retry_btn = msg.addButton("Retry", QMessageBox.AcceptRole)
+        msg.addButton(QMessageBox.Cancel)
+        msg.exec_()
+
+        if msg.clickedButton() == open_btn:
+            import subprocess
+            subprocess.Popen([
+                "open",
+                "x-apple.systempreferences:"
+                "com.apple.preference.security?Privacy_Accessibility",
+            ])
+        elif msg.clickedButton() == retry_btn:
+            hotkey.start()
+
+    hotkey.permission_needed.connect(on_permission_needed)
     window.capture_started.connect(lambda: hotkey.suppress(True))
     window.hotkey_updated.connect(lambda key: hotkey.restart(key))
 
