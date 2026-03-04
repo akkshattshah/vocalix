@@ -63,9 +63,7 @@ class HotkeyCapture(QLabel):
             return super().keyPressEvent(event)
 
         key = event.key()
-        ignore = {Qt.Key_Shift, Qt.Key_Control, Qt.Key_Alt, Qt.Key_Meta,
-                  Qt.Key_Super_L, Qt.Key_Super_R, Qt.Key_unknown}
-        if key in ignore:
+        if key == Qt.Key_unknown:
             return
 
         name = _qt_key_to_keyboard_name(key)
@@ -81,6 +79,8 @@ class HotkeyCapture(QLabel):
 
 
 _QT_KEY_MAP = {
+    Qt.Key_Control: "ctrl", Qt.Key_Shift: "shift", Qt.Key_Alt: "alt",
+    Qt.Key_Meta: "windows", Qt.Key_Super_L: "windows", Qt.Key_Super_R: "windows",
     Qt.Key_F1: "f1", Qt.Key_F2: "f2", Qt.Key_F3: "f3", Qt.Key_F4: "f4",
     Qt.Key_F5: "f5", Qt.Key_F6: "f6", Qt.Key_F7: "f7", Qt.Key_F8: "f8",
     Qt.Key_F9: "f9", Qt.Key_F10: "f10", Qt.Key_F11: "f11", Qt.Key_F12: "f12",

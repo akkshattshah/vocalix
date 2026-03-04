@@ -15,7 +15,7 @@ def _resource_path(relative: str) -> str:
     """Return the absolute path to a bundled resource, works both in dev and
     when frozen with PyInstaller (where files live under sys._MEIPASS)."""
     if getattr(sys, "_MEIPASS", None):
-        return os.path.join(sys._MEIPASS, relative)
+        return os.path.join(sys._MEIPASS, "auth", relative)
     return os.path.join(os.path.dirname(__file__), relative)
 
 
