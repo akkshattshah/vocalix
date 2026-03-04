@@ -1,6 +1,7 @@
 PyQt5
 keyboard
 pynput
+pyobjc-framework-Cocoa; sys_platform == "darwin"
 sounddevice
 scipy
 openai

@@ -19,6 +19,8 @@ a = Analysis(
         "scipy.io.wavfile",
         "pynput.keyboard._darwin",
         "pynput._util.darwin",
+        "AppKit",
+        "Foundation",
     ],
     hookspath=[],
     hooksconfig={},

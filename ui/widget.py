@@ -1,4 +1,5 @@
 import math
+import sys
 
 from PyQt5.QtWidgets import QWidget, QApplication
 from PyQt5.QtCore import (
@@ -66,10 +67,38 @@ class FloatingPill(QWidget):
             Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
             | Qt.Tool
+            | Qt.WindowDoesNotAcceptFocus
         )
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_MacAlwaysShowToolWindow, True)
         self.setFixedSize(self.W_IDLE + self.MARGIN * 2, self.PILL_H)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if sys.platform == "darwin":
+            self._apply_macos_window_level()
+
+    def _apply_macos_window_level(self):
+        """Set NSWindow level to StatusWindow so the pill floats above everything."""
+        try:
+            import AppKit
+            from AppKit import (
+                NSApp, NSStatusWindowLevel,
+                NSWindowCollectionBehaviorCanJoinAllSpaces,
+                NSWindowCollectionBehaviorStationary,
+            )
+            ns_windows = NSApp.windows()
+            wid = int(self.winId())
+            for ns_win in ns_windows:
+                if ns_win.windowNumber() == wid:
+                    ns_win.setLevel_(NSStatusWindowLevel)
+                    ns_win.setCollectionBehavior_(
+                        NSWindowCollectionBehaviorCanJoinAllSpaces
+                        | NSWindowCollectionBehaviorStationary
+                    )
+                    break
+        except Exception:
+            pass
 
     def _setup_timers(self):
         self._dot_timer = QTimer(self)

@@ -1,7 +1,6 @@
 import sys
 import time
 import subprocess
-import pyautogui
 
 _IS_WIN = sys.platform == "win32"
 _IS_MAC = sys.platform == "darwin"
@@ -13,6 +12,7 @@ _IS_MAC = sys.platform == "darwin"
 if _IS_WIN:
     import ctypes
     import ctypes.wintypes as w
+    import pyautogui
 
     CF_UNICODETEXT = 13
     GMEM_MOVEABLE = 0x0002
@@ -67,24 +67,37 @@ if _IS_WIN:
                 pass
             return None
 
+    def _paste():
+        pyautogui.hotkey("ctrl", "v")
+
 
 # ---------------------------------------------------------------------------
-# macOS clipboard via pbcopy / pbpaste
+# macOS clipboard via pbcopy / pbpaste  +  pynput for Cmd-V
 # ---------------------------------------------------------------------------
 elif _IS_MAC:
+    from pynput.keyboard import Controller as _KbController, Key as _Key
+
+    _mac_kb = _KbController()
+
     def _clipboard_set(text: str):
         subprocess.run(
-            ["pbcopy"], input=text.encode("utf-8"), check=True,
+            ["/usr/bin/pbcopy"], input=text.encode("utf-8"), check=True,
         )
 
     def _clipboard_get() -> str | None:
         try:
             r = subprocess.run(
-                ["pbpaste"], capture_output=True, check=True,
+                ["/usr/bin/pbpaste"], capture_output=True, check=True,
             )
             return r.stdout.decode("utf-8")
         except Exception:
             return None
+
+    def _paste():
+        _mac_kb.press(_Key.cmd)
+        _mac_kb.press("v")
+        _mac_kb.release("v")
+        _mac_kb.release(_Key.cmd)
 
 else:
     raise RuntimeError(f"Unsupported platform: {sys.platform}")
@@ -102,8 +115,7 @@ def inject_text(text: str):
     _clipboard_set(text)
 
     time.sleep(0.05)
-    paste_key = "command" if _IS_MAC else "ctrl"
-    pyautogui.hotkey(paste_key, "v")
+    _paste()
     time.sleep(0.15)
 
     if original is not None:
