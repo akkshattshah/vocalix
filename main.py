@@ -10,12 +10,14 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 
 from ui.widget import FloatingPill, StateIndicator
+from ui.setup_dialog import ApiKeyDialog
 from core.hotkey import HotkeyListener
 from core.recorder import AudioRecorder
 from core.transcriber import Transcriber
 from core.formatter import Formatter, detect_command
 from core.commander import Commander
 from core.injector import inject_text
+from core.config import get_api_key, set_api_key
 from auth.session import is_authenticated
 from auth.server import run_server
 
@@ -44,11 +46,29 @@ def _ensure_authenticated():
     print("[vocalix] Authenticated.")
 
 
-def main():
-    _ensure_authenticated()
+def _ensure_api_key(app: QApplication) -> str:
+    """Return the OpenAI API key, prompting the user if not yet stored."""
+    key = get_api_key()
+    if key:
+        return key
 
+    dlg = ApiKeyDialog()
+    if dlg.exec_() == ApiKeyDialog.Accepted:
+        key = dlg.get_key()
+        set_api_key(key)
+        return key
+
+    sys.exit(0)
+
+
+def main():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
+
+    api_key = _ensure_api_key(app)
+    os.environ["OPENAI_API_KEY"] = api_key
+
+    _ensure_authenticated()
 
     pill = FloatingPill()
     pill.show()

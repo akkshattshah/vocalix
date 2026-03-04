@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 
 from flask import Flask, redirect, request, render_template, jsonify
 from auth.session import save_session, is_authenticated
+from core.config import get_supabase_url
 
 REDIRECT_URI = "http://localhost:5111/auth/callback"
 
@@ -34,7 +35,7 @@ def login_page():
 
 @app.route("/auth/google")
 def auth_google():
-    supabase_url = os.getenv("SUPABASE_URL", "")
+    supabase_url = get_supabase_url()
     params = urlencode({
         "provider": "google",
         "redirect_to": REDIRECT_URI,
