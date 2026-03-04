@@ -1,5 +1,6 @@
 PyQt5
 keyboard
+pynput
 sounddevice
 scipy
 openai

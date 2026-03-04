@@ -68,6 +68,7 @@ class FloatingPill(QWidget):
             | Qt.Tool
         )
         self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_MacAlwaysShowToolWindow, True)
         self.setFixedSize(self.W_IDLE + self.MARGIN * 2, self.PILL_H)
 
     def _setup_timers(self):

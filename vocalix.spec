@@ -17,6 +17,8 @@ a = Analysis(
         "scipy._lib.messagestream",
         "scipy.io",
         "scipy.io.wavfile",
+        "pynput.keyboard._darwin",
+        "pynput._util.darwin",
     ],
     hookspath=[],
     hooksconfig={},
