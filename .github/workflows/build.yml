@@ -41,7 +41,7 @@ jobs:
       - name: Upload release asset
         uses: softprops/action-gh-release@v2
         with:
-          files: Vocalix-Setup.exe
+          files: Vocalix-V1-Setup.exe
 
   build-macos:
     runs-on: macos-latest
@@ -65,9 +65,9 @@ jobs:
         run: pyinstaller vocalix.spec
 
       - name: Create zip archive
-        run: cd dist && zip -r ../Vocalix-macOS.zip Vocalix.app
+        run: cd dist && zip -r ../Vocalix-V1-macOS.zip Vocalix.app
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v2
         with:
-          files: Vocalix-macOS.zip
+          files: Vocalix-V1-macOS.zip

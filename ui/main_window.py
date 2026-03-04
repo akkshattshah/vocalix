@@ -216,7 +216,7 @@ class MainWindow(QMainWindow):
 
         footer.addStretch()
 
-        version = QLabel("v0.1.0")
+        version = QLabel("v1.0.0")
         version.setFont(QFont("Segoe UI", 8))
         version.setStyleSheet("color: #bbb;")
         footer.addWidget(version)

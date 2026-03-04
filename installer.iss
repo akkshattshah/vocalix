@@ -1,12 +1,12 @@
 [Setup]
 AppName=Vocalix
-AppVersion=0.1.0
+AppVersion=1.0.0
 AppPublisher=Vocalix
 AppPublisherURL=https://github.com/akkshattshah/vocalix
 DefaultDirName={autopf}\Vocalix
 DefaultGroupName=Vocalix
 UninstallDisplayIcon={app}\Vocalix.exe
-OutputBaseFilename=Vocalix-Setup
+OutputBaseFilename=Vocalix-V1-Setup
 OutputDir=.
 Compression=lzma2
 SolidCompression=yes
