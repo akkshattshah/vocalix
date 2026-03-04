@@ -5,13 +5,28 @@ from PyQt5.QtCore import QObject, pyqtSignal
 
 WAKE_WORDS = [
     "hey vocalix",
+    "hey vokalix",
+    "hey vocalex",
     "hey vocal x",
     "hey vocal ix",
+    "hey vocal lix",
     "hey vocalics",
     "hey vocalize",
+    "hey vocalise",
+    "hey vocal licks",
+    "hey vocal mix",
+    "hay vocalix",
+    "hay vokalix",
     "a vocalix",
+    "a vokalix",
     "a vocal x",
+    "a vocal ix",
 ]
+
+_WAKE_RE = re.compile(
+    r"^(?:hey|hay|a)\s+vo[ck]al\w*",
+    re.IGNORECASE,
+)
 
 
 def detect_command(raw_text: str) -> tuple[bool, str]:
@@ -26,6 +41,13 @@ def detect_command(raw_text: str) -> tuple[bool, str]:
             if instruction:
                 return True, instruction
             return False, raw_text
+
+    m = _WAKE_RE.match(lower)
+    if m:
+        instruction = raw_text[m.end():].strip(" ,.")
+        if instruction:
+            return True, instruction
+
     return False, raw_text
 
 SYSTEM_PROMPT = """\

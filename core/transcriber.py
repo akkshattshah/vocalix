@@ -19,6 +19,7 @@ class Transcriber(QObject):
                 result = self._client.audio.transcriptions.create(
                     model="whisper-1",
                     file=f,
+                    prompt="Hey Vocalix",
                 )
             text = result.text.strip()
             if text:
@@ -40,6 +41,7 @@ class Transcriber(QObject):
                 result = self._client.audio.transcriptions.create(
                     model="whisper-1",
                     file=f,
+                    prompt="Hey Vocalix",
                 )
             return result.text.strip()
         finally:
