@@ -65,4 +65,9 @@ app = BUNDLE(
     name="Vocalix.app",
     icon=None,
     bundle_identifier="com.vocalix.app",
+    info_plist={
+        "LSUIElement": True,
+        "NSMicrophoneUsageDescription": "Vocalix needs microphone access to transcribe your speech.",
+        "NSAppleEventsUsageDescription": "Vocalix uses Accessibility to type text into other apps.",
+    },
 )
