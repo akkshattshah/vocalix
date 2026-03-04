@@ -11,6 +11,10 @@ from PyQt5.QtGui import QFont, QIcon, QKeyEvent, QPixmap
 from auth.session import load_session, clear_session
 from core.config import get_hotkey, set_hotkey
 
+_IS_MAC = sys.platform == "darwin"
+_FONT_MONO = "Menlo" if _IS_MAC else "Consolas"
+_FONT_UI = ".AppleSystemUIFont" if _IS_MAC else "Segoe UI"
+
 
 def _resource_path(relative: str) -> str:
     if getattr(sys, "_MEIPASS", None):
@@ -44,7 +48,7 @@ class HotkeyCapture(QLabel):
 
     def _update_display(self):
         display = self._key.upper() if self._key else "—"
-        font = QFont("Consolas", 14)
+        font = QFont(_FONT_MONO, 14)
         font.setBold(True)
         self.setFont(font)
         self.setText(display)
@@ -78,9 +82,11 @@ class HotkeyCapture(QLabel):
         return self._key
 
 
+_META_NAME = "cmd" if _IS_MAC else "windows"
+
 _QT_KEY_MAP = {
     Qt.Key_Control: "ctrl", Qt.Key_Shift: "shift", Qt.Key_Alt: "alt",
-    Qt.Key_Meta: "windows", Qt.Key_Super_L: "windows", Qt.Key_Super_R: "windows",
+    Qt.Key_Meta: _META_NAME, Qt.Key_Super_L: _META_NAME, Qt.Key_Super_R: _META_NAME,
     Qt.Key_F1: "f1", Qt.Key_F2: "f2", Qt.Key_F3: "f3", Qt.Key_F4: "f4",
     Qt.Key_F5: "f5", Qt.Key_F6: "f6", Qt.Key_F7: "f7", Qt.Key_F8: "f8",
     Qt.Key_F9: "f9", Qt.Key_F10: "f10", Qt.Key_F11: "f11", Qt.Key_F12: "f12",
@@ -160,7 +166,7 @@ class MainWindow(QMainWindow):
         layout.addSpacing(16)
 
         hk_title = QLabel("Activation Key")
-        hk_title.setFont(QFont("Segoe UI", 10))
+        hk_title.setFont(QFont(_FONT_UI, 10))
         hk_title.setStyleSheet("color: #555;")
         layout.addWidget(hk_title)
         layout.addSpacing(6)
@@ -173,7 +179,7 @@ class MainWindow(QMainWindow):
         hk_row.addWidget(self._hotkey_capture, stretch=1)
 
         change_btn = QPushButton("Change")
-        change_btn.setFont(QFont("Segoe UI", 10))
+        change_btn.setFont(QFont(_FONT_UI, 10))
         change_btn.setCursor(Qt.PointingHandCursor)
         change_btn.setFixedHeight(44)
         change_btn.setFixedWidth(90)
@@ -188,7 +194,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(hk_row)
 
         hk_hint = QLabel("Press the key you want to use as your speech toggle.")
-        hk_hint.setFont(QFont("Segoe UI", 8))
+        hk_hint.setFont(QFont(_FONT_UI, 8))
         hk_hint.setStyleSheet("color: #999; margin-top: 4px;")
         layout.addWidget(hk_hint)
 
@@ -204,7 +210,7 @@ class MainWindow(QMainWindow):
         footer = QHBoxLayout()
 
         signout_btn = QPushButton("Sign out")
-        signout_btn.setFont(QFont("Segoe UI", 9))
+        signout_btn.setFont(QFont(_FONT_UI, 9))
         signout_btn.setCursor(Qt.PointingHandCursor)
         signout_btn.setFlat(True)
         signout_btn.setStyleSheet(
@@ -217,7 +223,7 @@ class MainWindow(QMainWindow):
         footer.addStretch()
 
         version = QLabel("v1.0.0")
-        version.setFont(QFont("Segoe UI", 8))
+        version.setFont(QFont(_FONT_UI, 8))
         version.setStyleSheet("color: #bbb;")
         footer.addWidget(version)
 

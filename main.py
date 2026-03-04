@@ -232,7 +232,7 @@ def main():
 
     # --- Signal wiring ---
     # All callbacks touch Qt widgets, so they MUST run on the main thread.
-    # Signals from pynput / recorder threads use the dispatch queue.
+    # Signals from hotkey / recorder threads use the dispatch queue.
 
     hotkey.start_recording.connect(lambda: _dispatch.put((on_start_recording, ())))
     hotkey.stop_recording.connect(lambda: _dispatch.put((on_stop_recording, ())))

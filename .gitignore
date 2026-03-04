@@ -13,3 +13,4 @@ build/
 *.exe
 *.zip
 assets/
+.DS_Store

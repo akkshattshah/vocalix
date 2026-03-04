@@ -72,12 +72,12 @@ if _IS_WIN:
 
 
 # ---------------------------------------------------------------------------
-# macOS clipboard via pbcopy / pbpaste  +  pynput for Cmd-V
+# macOS clipboard via pbcopy / pbpaste  +  Quartz CGEvent for Cmd-V
 # ---------------------------------------------------------------------------
 elif _IS_MAC:
-    from pynput.keyboard import Controller as _KbController, Key as _Key
+    import Quartz
 
-    _mac_kb = _KbController()
+    _VK_V = 0x09
 
     def _clipboard_set(text: str):
         subprocess.run(
@@ -94,10 +94,13 @@ elif _IS_MAC:
             return None
 
     def _paste():
-        _mac_kb.press(_Key.cmd)
-        _mac_kb.press("v")
-        _mac_kb.release("v")
-        _mac_kb.release(_Key.cmd)
+        src = Quartz.CGEventSourceCreate(Quartz.kCGEventSourceStateCombinedSessionState)
+        down = Quartz.CGEventCreateKeyboardEvent(src, _VK_V, True)
+        up = Quartz.CGEventCreateKeyboardEvent(src, _VK_V, False)
+        Quartz.CGEventSetFlags(down, Quartz.kCGEventFlagMaskCommand)
+        Quartz.CGEventSetFlags(up, Quartz.kCGEventFlagMaskCommand)
+        Quartz.CGEventPost(Quartz.kCGAnnotatedSessionEventTap, down)
+        Quartz.CGEventPost(Quartz.kCGAnnotatedSessionEventTap, up)
 
 else:
     raise RuntimeError(f"Unsupported platform: {sys.platform}")

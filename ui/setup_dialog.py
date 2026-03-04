@@ -1,8 +1,14 @@
+import sys
+
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout,
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
+
+_IS_MAC = sys.platform == "darwin"
+_FONT_MONO = "Menlo" if _IS_MAC else "Consolas"
+_FONT_UI = ".AppleSystemUIFont" if _IS_MAC else "Segoe UI"
 
 
 class ApiKeyDialog(QDialog):
@@ -31,7 +37,7 @@ class ApiKeyDialog(QDialog):
 
         desc = QLabel("Enter your OpenAI API key to get started.\n"
                        "You can find it at platform.openai.com/api-keys")
-        desc.setFont(QFont("Segoe UI", 9))
+        desc.setFont(QFont(_FONT_UI, 9))
         desc.setAlignment(Qt.AlignCenter)
         desc.setStyleSheet("color: #666;")
         layout.addWidget(desc)
@@ -41,7 +47,7 @@ class ApiKeyDialog(QDialog):
         self._input = QLineEdit()
         self._input.setPlaceholderText("sk-proj-...")
         self._input.setEchoMode(QLineEdit.Password)
-        self._input.setFont(QFont("Consolas", 10))
+        self._input.setFont(QFont(_FONT_MONO, 10))
         self._input.setStyleSheet(
             "QLineEdit { padding: 8px 12px; border: 1px solid #ccc; "
             "border-radius: 8px; background: #fafafa; }"
@@ -55,7 +61,7 @@ class ApiKeyDialog(QDialog):
         btn_row.addStretch()
 
         self._save_btn = QPushButton("Continue")
-        self._save_btn.setFont(QFont("Segoe UI", 10))
+        self._save_btn.setFont(QFont(_FONT_UI, 10))
         self._save_btn.setCursor(Qt.PointingHandCursor)
         self._save_btn.setStyleSheet(
             "QPushButton { padding: 8px 28px; border-radius: 8px; "

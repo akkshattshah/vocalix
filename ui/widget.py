@@ -8,6 +8,8 @@ from PyQt5.QtCore import (
 )
 from PyQt5.QtGui import QPainter, QColor, QPainterPath, QFont, QPen
 
+_IS_MAC = sys.platform == "darwin"
+
 
 class StateIndicator:
     IDLE = 0
@@ -41,10 +43,16 @@ class FloatingPill(QWidget):
         self._wave_phase = 0.0
         self._pill_width = float(self.W_IDLE)
 
-        self._setup_window()
+        self._ns_panel = None
+        self._ns_view = None
+
+        if _IS_MAC:
+            self._init_native_panel()
+        else:
+            self._setup_window()
+
         self._setup_timers()
         self._setup_animations()
-        self._position_above_taskbar()
 
     # -- property for smooth width animation ------------------------------
 
@@ -54,13 +62,56 @@ class FloatingPill(QWidget):
     def _set_pill_width(self, val):
         self._pill_width = val
         total_w = int(val) + self.MARGIN * 2
-        self.setFixedWidth(total_w)
-        self._recentre_horizontally()
-        self.update()
+        if self._ns_panel is not None:
+            from AppKit import NSScreen
+            frame = self._ns_panel.frame()
+            old_cx = frame.origin.x + frame.size.width / 2
+            frame.size.width = total_w
+            frame.origin.x = old_cx - total_w / 2
+            self._ns_panel.setFrame_display_(frame, True)
+            self._ns_view.setFrame_(
+                ((0, 0), (total_w, self.PILL_H)),
+            )
+            self._ns_view.setNeedsDisplay_(True)
+        else:
+            self.setFixedWidth(total_w)
+            self._recentre_horizontally()
+            self.update()
 
     animatedWidth = pyqtProperty(float, _get_pill_width, _set_pill_width)
 
-    # -- setup ------------------------------------------------------------
+    # -- macOS native panel ------------------------------------------------
+
+    def _init_native_panel(self):
+        from ui.native_overlay import create_pill_panel
+
+        screen = QApplication.primaryScreen()
+        avail = screen.availableGeometry()
+        full = screen.geometry()
+
+        pill_w = self.W_IDLE + self.MARGIN * 2
+        pill_h = self.PILL_H
+
+        qt_x = avail.x() + (avail.width() - pill_w) // 2
+        qt_y = avail.y() + avail.height() - pill_h - 10
+
+        cocoa_y = full.height() - qt_y - pill_h
+
+        self._ns_panel, self._ns_view = create_pill_panel(
+            qt_x, cocoa_y, pill_w, pill_h,
+        )
+
+        self._screen_width = avail.width()
+        self._screen_x = avail.x()
+        self._screen_height = full.height()
+
+        print(
+            f"[vocalix] Native pill overlay: cocoa=({qt_x}, {cocoa_y}), "
+            f"size={pill_w}x{pill_h}, level={self._ns_panel.level()}",
+            flush=True,
+        )
+
+    # -- Qt window setup (Windows only) ------------------------------------
 
     def _setup_window(self):
         self.setWindowFlags(
@@ -70,37 +121,35 @@ class FloatingPill(QWidget):
             | Qt.WindowDoesNotAcceptFocus
         )
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setAttribute(Qt.WA_MacAlwaysShowToolWindow, True)
         self.setFixedSize(self.W_IDLE + self.MARGIN * 2, self.PILL_H)
 
-    def showEvent(self, event):
-        super().showEvent(event)
-        if sys.platform == "darwin":
-            self._apply_macos_window_level()
+        screen = QApplication.primaryScreen().availableGeometry()
+        x = screen.x() + (screen.width() - self.width()) // 2
+        y = screen.y() + screen.height() - self.height() - 40
+        self.move(x, y)
+        self._screen_width = screen.width()
+        self._screen_x = screen.x()
+        self._base_y = y
 
-    def _apply_macos_window_level(self):
-        """Set NSWindow level high and join all Spaces including fullscreen."""
-        try:
-            import AppKit
+    def _recentre_horizontally(self):
+        x = self._screen_x + (self._screen_width - self.width()) // 2
+        self.move(x, self._base_y)
 
-            NSStatusWindowLevel = 25
-            kCanJoinAllSpaces = 1 << 0
-            kStationary = 1 << 4
-            kFullScreenAuxiliary = 1 << 8
+    # -- show / hide -------------------------------------------------------
 
-            ns_windows = AppKit.NSApp.windows()
-            wid = int(self.winId())
-            for ns_win in ns_windows:
-                if ns_win.windowNumber() == wid:
-                    ns_win.setLevel_(NSStatusWindowLevel)
-                    ns_win.setCollectionBehavior_(
-                        kCanJoinAllSpaces
-                        | kStationary
-                        | kFullScreenAuxiliary
-                    )
-                    break
-        except Exception:
-            pass
+    def show(self):
+        if self._ns_panel is not None:
+            self._ns_panel.orderFrontRegardless()
+        else:
+            super().show()
+
+    def hide(self):
+        if self._ns_panel is not None:
+            self._ns_panel.orderOut_(None)
+        else:
+            super().hide()
+
+    # -- timers ------------------------------------------------------------
 
     def _setup_timers(self):
         self._dot_timer = QTimer(self)
@@ -116,22 +165,9 @@ class FloatingPill(QWidget):
         self._width_anim.setDuration(250)
         self._width_anim.setEasingCurve(QEasingCurve.OutCubic)
 
-    def _position_above_taskbar(self):
-        screen = QApplication.primaryScreen().geometry()
-        x = (screen.width() - self.width()) // 2
-        y = screen.height() - self.height() - 80
-        self.move(x, y)
-        self._screen_width = screen.width()
-        self._base_y = y
-
-    def _recentre_horizontally(self):
-        x = (self._screen_width - self.width()) // 2
-        self.move(x, self._base_y)
-
     # -- state transitions ------------------------------------------------
 
     def set_state(self, state: int):
-        prev = self._state
         self._state = state
 
         self._dot_timer.stop()
@@ -154,6 +190,10 @@ class FloatingPill(QWidget):
             self._dot_timer.start()
             self._animate_width(self.W_COMMANDING)
 
+        if self._ns_view is not None:
+            self._ns_view._state = state
+            self._ns_view.setNeedsDisplay_(True)
+
         self.state_changed.emit(state)
         self.update()
 
@@ -167,13 +207,21 @@ class FloatingPill(QWidget):
 
     def _tick_dots(self):
         self._dot_count = (self._dot_count % 3) + 1
-        self.update()
+        if self._ns_view is not None:
+            self._ns_view._dot_count = self._dot_count
+            self._ns_view.setNeedsDisplay_(True)
+        else:
+            self.update()
 
     def _tick_wave(self):
         self._wave_phase += 0.25
-        self.update()
+        if self._ns_view is not None:
+            self._ns_view._wave_phase = self._wave_phase
+            self._ns_view.setNeedsDisplay_(True)
+        else:
+            self.update()
 
-    # -- painting ---------------------------------------------------------
+    # -- painting (Windows only) ------------------------------------------
 
     def _pill_rect(self) -> QRectF:
         m = self.MARGIN
@@ -184,18 +232,18 @@ class FloatingPill(QWidget):
         return QRectF(m, m, self.width() - m * 2, self.PILL_H_INNER)
 
     def paintEvent(self, _event):
+        if self._ns_panel is not None:
+            return
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
 
         pr = self._pill_rect()
         r = self.IDLE_RADIUS if self._state == StateIndicator.IDLE else self.RADIUS
 
-        # Subtle shadow
         shadow_path = QPainterPath()
         shadow_path.addRoundedRect(pr.adjusted(-1, 1, 1, 2), r, r)
         p.fillPath(shadow_path, QColor(0, 0, 0, 30))
 
-        # Pill body
         body = QPainterPath()
         body.addRoundedRect(pr, r, r)
         p.fillPath(body, QColor(255, 255, 255, 245))
@@ -204,7 +252,6 @@ class FloatingPill(QWidget):
         p.setPen(border_pen)
         p.drawPath(body)
 
-        # Content
         if self._state == StateIndicator.IDLE:
             self._draw_idle_line(p, pr)
         elif self._state == StateIndicator.RECORDING:
@@ -217,7 +264,6 @@ class FloatingPill(QWidget):
         p.end()
 
     def _draw_idle_line(self, p: QPainter, pr: QRectF):
-        """Tiny horizontal dash in the centre of the slim capsule."""
         cx = pr.x() + pr.width() / 2
         cy = pr.y() + pr.height() / 2
         dash_w = 14
@@ -230,8 +276,6 @@ class FloatingPill(QWidget):
         )
 
     def _draw_recording(self, p: QPainter, pr: QRectF):
-        """Animated waveform + 'I'm listening' with cycling dots."""
-        # Animated waveform bars on the left
         wave_x = pr.x() + 16
         cy = pr.y() + pr.height() / 2
         bar_w = 2.5
@@ -245,7 +289,6 @@ class FloatingPill(QWidget):
             p.setBrush(QColor(50, 50, 55))
             p.drawRoundedRect(QRectF(bx, cy - h / 2, bar_w, h), 1.2, 1.2)
 
-        # Text — premium serif italic like Whispr Flow / Apple
         dots = "." * self._dot_count
         text = f"I\u2019m listening{dots}"
         p.setPen(QColor(30, 30, 32))
@@ -274,14 +317,18 @@ class FloatingPill(QWidget):
         p.setFont(font)
         p.drawText(pr, Qt.AlignCenter, text)
 
-    # -- dragging ---------------------------------------------------------
+    # -- dragging (Windows only) ------------------------------------------
 
     def mousePressEvent(self, event):
+        if self._ns_panel is not None:
+            return
         if event.button() == Qt.LeftButton:
             self._drag_pos = event.globalPos() - self.frameGeometry().topLeft()
             event.accept()
 
     def mouseMoveEvent(self, event):
+        if self._ns_panel is not None:
+            return
         if self._drag_pos is not None and event.buttons() & Qt.LeftButton:
             new_pos = event.globalPos() - self._drag_pos
             self.move(new_pos)
