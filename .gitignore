@@ -1,4 +1,5 @@
 .env
+core/_embedded_key.py
 __pycache__/
 *.pyc
 *.wav

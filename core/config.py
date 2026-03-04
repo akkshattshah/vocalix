@@ -24,10 +24,17 @@ def _save(data: dict):
 
 
 def get_api_key() -> str | None:
-    key = _load().get("openai_api_key")
-    if key:
-        return key
-    return os.getenv("OPENAI_API_KEY")
+    """Resolve API key: embedded build key > env var > user config."""
+    try:
+        from core._embedded_key import OPENAI_API_KEY
+        if OPENAI_API_KEY:
+            return OPENAI_API_KEY
+    except ImportError:
+        pass
+    env_key = os.getenv("OPENAI_API_KEY")
+    if env_key:
+        return env_key
+    return _load().get("openai_api_key")
 
 
 def set_api_key(key: str):
