@@ -25,6 +25,13 @@ class HotkeyListener(QObject):
 
     def stop(self):
         keyboard.unhook_all()
+        self._recording = False
+
+    def restart(self, new_key: str):
+        """Swap the hotkey at runtime."""
+        self.stop()
+        self._hotkey = new_key
+        self.start()
 
     def suppress(self, value: bool = True):
         self._suppressed = value

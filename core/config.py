@@ -43,6 +43,16 @@ def set_api_key(key: str):
     _save(data)
 
 
+def get_hotkey() -> str:
+    return _load().get("hotkey", "ctrl")
+
+
+def set_hotkey(key: str):
+    data = _load()
+    data["hotkey"] = key
+    _save(data)
+
+
 def get_supabase_url() -> str:
     return os.getenv("SUPABASE_URL", _SUPABASE_URL_DEFAULT)
 

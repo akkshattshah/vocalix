@@ -6,10 +6,12 @@ import logging
 import queue as _queue
 
 from dotenv import load_dotenv
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QIcon
 
 from ui.widget import FloatingPill, StateIndicator
+from ui.main_window import MainWindow
 from ui.setup_dialog import ApiKeyDialog
 from core.hotkey import HotkeyListener
 from core.recorder import AudioRecorder
@@ -17,8 +19,8 @@ from core.transcriber import Transcriber
 from core.formatter import Formatter, detect_command
 from core.commander import Commander
 from core.injector import inject_text
-from core.config import get_api_key, set_api_key
-from auth.session import is_authenticated
+from core.config import get_api_key, set_api_key, get_hotkey
+from auth.session import is_authenticated, clear_session
 from auth.server import run_server
 
 
@@ -27,6 +29,12 @@ load_dotenv()
 logging.getLogger("werkzeug").setLevel(logging.ERROR)
 
 _dispatch: _queue.Queue = _queue.Queue()
+
+
+def _resource_path(relative: str) -> str:
+    if getattr(sys, "_MEIPASS", None):
+        return os.path.join(sys._MEIPASS, relative)
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative)
 
 
 def _ensure_authenticated():
@@ -70,18 +78,62 @@ def main():
 
     _ensure_authenticated()
 
+    # --- System tray icon ---
+
+    logo_path = _resource_path("logo.png")
+    tray_icon = QSystemTrayIcon(QIcon(logo_path), app)
+
+    tray_menu = QMenu()
+    open_action = QAction("Open Vocalix")
+    quit_action = QAction("Quit")
+    tray_menu.addAction(open_action)
+    tray_menu.addSeparator()
+    tray_menu.addAction(quit_action)
+    tray_icon.setContextMenu(tray_menu)
+    tray_icon.setToolTip("Vocalix")
+    tray_icon.show()
+
+    # --- Main window + floating pill ---
+
+    window = MainWindow()
     pill = FloatingPill()
-    pill.show()
 
-    hotkey_name = os.getenv("HOTKEY", "ctrl")
+    def show_app():
+        window.show()
+        window.raise_()
+        window.activateWindow()
+        pill.show()
 
-    hotkey = HotkeyListener(hotkey=hotkey_name)
+    def quit_app():
+        hotkey.stop()
+        pill.hide()
+        window.hide()
+        tray_icon.hide()
+        app.quit()
+
+    open_action.triggered.connect(show_app)
+    quit_action.triggered.connect(quit_app)
+    tray_icon.activated.connect(
+        lambda reason: show_app() if reason == QSystemTrayIcon.Trigger else None
+    )
+
+    # Override window close to fully quit
+    def on_window_close(event):
+        hotkey.stop()
+        pill.hide()
+        tray_icon.hide()
+        event.accept()
+        app.quit()
+
+    window.closeEvent = on_window_close
+
+    # --- Hotkey and audio pipeline ---
+
+    hotkey = HotkeyListener(hotkey=get_hotkey())
     recorder = AudioRecorder()
     transcriber = Transcriber()
     formatter = Formatter()
     commander = Commander()
-
-    # -- main-thread poller for results from background threads --------
 
     def _poll():
         while not _dispatch.empty():
@@ -96,7 +148,7 @@ def main():
     poll_timer.timeout.connect(_poll)
     poll_timer.start()
 
-    # --- callbacks ----------------------------------------------------
+    # --- Callbacks ---
 
     def on_start_recording():
         print("[vocalix] Recording started", flush=True)
@@ -178,13 +230,28 @@ def main():
         print(f"[vocalix] error: {msg}", flush=True)
         pill.set_state(StateIndicator.IDLE)
 
-    # --- signal wiring (only main-thread signals from hotkey/recorder) -
+    # --- Signal wiring ---
 
     hotkey.start_recording.connect(on_start_recording)
     hotkey.stop_recording.connect(on_stop_recording)
     recorder.finished.connect(on_wav_ready)
     recorder.discarded.connect(on_discarded)
 
+    window.hotkey_updated.connect(lambda key: hotkey.restart(key))
+
+    def on_signed_out():
+        clear_session()
+        hotkey.stop()
+        pill.hide()
+        window.hide()
+        tray_icon.hide()
+        app.quit()
+
+    window.signed_out.connect(on_signed_out)
+
+    # --- Launch ---
+
+    show_app()
     hotkey.start()
 
     exit_code = app.exec_()
