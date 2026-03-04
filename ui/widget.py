@@ -79,22 +79,24 @@ class FloatingPill(QWidget):
             self._apply_macos_window_level()
 
     def _apply_macos_window_level(self):
-        """Set NSWindow level to StatusWindow so the pill floats above everything."""
+        """Set NSWindow level high and join all Spaces including fullscreen."""
         try:
             import AppKit
-            from AppKit import (
-                NSApp, NSStatusWindowLevel,
-                NSWindowCollectionBehaviorCanJoinAllSpaces,
-                NSWindowCollectionBehaviorStationary,
-            )
-            ns_windows = NSApp.windows()
+
+            NSStatusWindowLevel = 25
+            kCanJoinAllSpaces = 1 << 0
+            kStationary = 1 << 4
+            kFullScreenAuxiliary = 1 << 8
+
+            ns_windows = AppKit.NSApp.windows()
             wid = int(self.winId())
             for ns_win in ns_windows:
                 if ns_win.windowNumber() == wid:
                     ns_win.setLevel_(NSStatusWindowLevel)
                     ns_win.setCollectionBehavior_(
-                        NSWindowCollectionBehaviorCanJoinAllSpaces
-                        | NSWindowCollectionBehaviorStationary
+                        kCanJoinAllSpaces
+                        | kStationary
+                        | kFullScreenAuxiliary
                     )
                     break
         except Exception:

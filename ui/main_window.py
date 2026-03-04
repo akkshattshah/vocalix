@@ -110,6 +110,7 @@ class MainWindow(QMainWindow):
     """Settings / home window for Vocalix."""
 
     hotkey_updated = pyqtSignal(str)
+    capture_started = pyqtSignal()
     signed_out = pyqtSignal()
 
     def __init__(self):
@@ -181,7 +182,7 @@ class MainWindow(QMainWindow):
             "border-radius: 10px; }"
             "QPushButton:hover { background: #333; }"
         )
-        change_btn.clicked.connect(self._hotkey_capture.start_capture)
+        change_btn.clicked.connect(self._on_start_capture)
         hk_row.addWidget(change_btn)
 
         layout.addLayout(hk_row)
@@ -230,6 +231,10 @@ class MainWindow(QMainWindow):
         x = (screen.width() - self.width()) // 2
         y = (screen.height() - self.height()) // 2
         self.move(x, y)
+
+    def _on_start_capture(self):
+        self.capture_started.emit()
+        self._hotkey_capture.start_capture()
 
     def _on_hotkey_changed(self, new_key: str):
         set_hotkey(new_key)

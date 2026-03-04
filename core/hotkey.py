@@ -38,6 +38,7 @@ class HotkeyListener(QObject):
         self._hotkey = hotkey
         self._recording = False
         self._suppressed = False
+        self._key_held = False
         self._listener = None
 
     def start(self):
@@ -47,7 +48,11 @@ class HotkeyListener(QObject):
             keyboard.on_press_key(self._hotkey, self._on_press, suppress=False)
 
     def _start_pynput(self):
-        self._listener = pynput_kb.Listener(on_press=self._on_pynput_press)
+        self._key_held = False
+        self._listener = pynput_kb.Listener(
+            on_press=self._on_pynput_press,
+            on_release=self._on_pynput_release,
+        )
         self._listener.daemon = True
         self._listener.start()
 
@@ -67,25 +72,36 @@ class HotkeyListener(QObject):
         return False
 
     def _on_pynput_press(self, key):
-        if self._suppressed:
+        if self._suppressed or self._key_held:
             return
         if self._key_matches(key):
+            self._key_held = True
             self._toggle()
+
+    def _on_pynput_release(self, key):
+        if self._key_matches(key):
+            self._key_held = False
 
     def stop(self):
         if _IS_MAC:
             if self._listener:
-                self._listener.stop()
+                try:
+                    self._listener.stop()
+                except Exception:
+                    pass
                 self._listener = None
         else:
             keyboard.unhook_all()
         self._recording = False
+        self._key_held = False
 
     def restart(self, new_key: str):
         """Swap the hotkey at runtime."""
+        self._suppressed = True
         self.stop()
         self._hotkey = new_key
         self.start()
+        self._suppressed = False
 
     def suppress(self, value: bool = True):
         self._suppressed = value

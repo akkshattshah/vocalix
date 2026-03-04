@@ -231,12 +231,15 @@ def main():
         pill.set_state(StateIndicator.IDLE)
 
     # --- Signal wiring ---
+    # All callbacks touch Qt widgets, so they MUST run on the main thread.
+    # Signals from pynput / recorder threads use the dispatch queue.
 
-    hotkey.start_recording.connect(on_start_recording)
-    hotkey.stop_recording.connect(on_stop_recording)
-    recorder.finished.connect(on_wav_ready)
-    recorder.discarded.connect(on_discarded)
+    hotkey.start_recording.connect(lambda: _dispatch.put((on_start_recording, ())))
+    hotkey.stop_recording.connect(lambda: _dispatch.put((on_stop_recording, ())))
+    recorder.finished.connect(lambda p: _dispatch.put((on_wav_ready, (p,))))
+    recorder.discarded.connect(lambda: _dispatch.put((on_discarded, ())))
 
+    window.capture_started.connect(lambda: hotkey.suppress(True))
     window.hotkey_updated.connect(lambda key: hotkey.restart(key))
 
     def on_signed_out():
