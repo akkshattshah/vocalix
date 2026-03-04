@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+*.wav
+*.mp3
+*.tmp
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+*.exe
+*.zip
+assets/
