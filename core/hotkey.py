@@ -74,6 +74,7 @@ class HotkeyListener(QObject):
         self._tap = None
         self._run_loop_ref = None
         self._thread = None
+        self._watchdog = None
 
     # -- public API --------------------------------------------------------
 
@@ -85,6 +86,9 @@ class HotkeyListener(QObject):
 
     def stop(self):
         if _IS_MAC:
+            if self._watchdog is not None:
+                self._watchdog.cancel()
+                self._watchdog = None
             if self._tap is not None:
                 Quartz.CGEventTapEnable(self._tap, False)
             if self._run_loop_ref is not None:
@@ -149,9 +153,34 @@ class HotkeyListener(QObject):
         self._thread = threading.Thread(target=_run, daemon=True)
         self._thread.start()
 
+        self._start_watchdog()
+
+    def _start_watchdog(self):
+        """Re-enable the tap every 5 s in case macOS silently disabled it."""
+        def _check():
+            if self._tap is not None:
+                if not Quartz.CGEventTapIsEnabled(self._tap):
+                    print("[vocalix] Watchdog: tap was disabled — re-enabling", flush=True)
+                    Quartz.CGEventTapEnable(self._tap, True)
+                self._watchdog = threading.Timer(5.0, _check)
+                self._watchdog.daemon = True
+                self._watchdog.start()
+
+        self._watchdog = threading.Timer(5.0, _check)
+        self._watchdog.daemon = True
+        self._watchdog.start()
+
     def _cg_callback(self, _proxy, event_type, event, _refcon):
         """CGEvent tap callback — runs on the tap thread, only reads
         integer key codes so it never touches TSM."""
+
+        # macOS disables taps that are "too slow" — re-enable immediately
+        if event_type == Quartz.kCGEventTapDisabledByTimeout:
+            print("[vocalix] Event tap was disabled by timeout — re-enabling", flush=True)
+            if self._tap is not None:
+                Quartz.CGEventTapEnable(self._tap, True)
+            return event
+
         if self._suppressed:
             return event
 
