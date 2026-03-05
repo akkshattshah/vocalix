@@ -19,6 +19,7 @@ from core.transcriber import Transcriber
 from core.formatter import Formatter, detect_command
 from core.commander import Commander
 from core.injector import inject_text
+from core.analytics import log_activation
 from core.config import get_api_key, set_api_key, get_hotkey
 from auth.session import is_authenticated, clear_session
 from auth.server import run_server
@@ -220,6 +221,7 @@ def main():
         hotkey.suppress(True)
         try:
             inject_text(text)
+            log_activation()
         except Exception as exc:
             print(f"[vocalix] Inject error: {exc}", flush=True)
         finally:
