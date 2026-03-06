@@ -21,6 +21,7 @@ from core.commander import Commander
 from core.injector import inject_text
 from core.analytics import log_activation
 from core.config import get_api_key, set_api_key, get_hotkey
+from core.autostart import enable as autostart_enable
 from auth.session import is_authenticated, clear_session
 from auth.server import run_server
 
@@ -78,6 +79,11 @@ def main():
     os.environ["OPENAI_API_KEY"] = api_key
 
     _ensure_authenticated()
+
+    try:
+        autostart_enable()
+    except Exception:
+        pass
 
     # --- System tray icon ---
 
