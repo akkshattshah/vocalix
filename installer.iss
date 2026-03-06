@@ -24,5 +24,8 @@ Name: "{autodesktop}\Vocalix"; Filename: "{app}\Vocalix.exe"; Tasks: desktopicon
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"
 
+[Registry]
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Vocalix"; ValueData: """{app}\Vocalix.exe"""; Flags: uninsdeletevalue
+
 [Run]
 Filename: "{app}\Vocalix.exe"; Description: "Launch Vocalix"; Flags: nowait postinstall skipifsilent
