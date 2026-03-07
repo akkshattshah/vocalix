@@ -11,6 +11,7 @@ a = Analysis(
     datas=[
         (os.path.join("auth", "templates", "login.html"), os.path.join("auth", "templates")),
         ("logo.png", "."),
+        ("icon.png", "."),
     ],
     hiddenimports=[
         "engineio.async_drivers.threading",
@@ -50,7 +51,7 @@ exe = EXE(
     strip=False,
     upx=True,
     console=False,          # windowed — no terminal
-    icon=None,              # swap for vocalix.ico when available
+    icon="icon.ico",
 )
 
 coll = COLLECT(
@@ -68,7 +69,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name="Vocalix.app",
-    icon=None,
+    icon="icon.icns",
     bundle_identifier="com.vocalix.app",
     info_plist={
         "LSUIElement": True,

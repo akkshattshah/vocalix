@@ -125,9 +125,11 @@ class MainWindow(QMainWindow):
         self.setFixedSize(420, 380)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowMaximizeButtonHint)
 
+        icon_path = _resource_path("icon.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+
         logo_path = _resource_path("logo.png")
-        if os.path.exists(logo_path):
-            self.setWindowIcon(QIcon(logo_path))
 
         central = QWidget()
         self.setCentralWidget(central)

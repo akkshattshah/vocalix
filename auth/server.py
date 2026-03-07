@@ -4,7 +4,7 @@ import threading
 import json
 from urllib.parse import urlencode
 
-from flask import Flask, redirect, request, render_template, jsonify
+from flask import Flask, redirect, request, render_template, jsonify, send_file
 from auth.session import save_session, is_authenticated
 from core.config import get_supabase_url
 
@@ -28,9 +28,21 @@ app.secret_key = os.urandom(24)
 auth_complete_event = threading.Event()
 
 
+def _root_resource_path(filename: str) -> str:
+    """Resolve a file from the project root (or _MEIPASS root when frozen)."""
+    if getattr(sys, "_MEIPASS", None):
+        return os.path.join(sys._MEIPASS, filename)
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), filename)
+
+
 @app.route("/login")
 def login_page():
     return render_template("login.html")
+
+
+@app.route("/logo.png")
+def serve_logo():
+    return send_file(_root_resource_path("logo.png"), mimetype="image/png")
 
 
 @app.route("/auth/google")

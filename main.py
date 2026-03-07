@@ -12,6 +12,7 @@ from PyQt5.QtGui import QIcon
 
 from ui.widget import FloatingPill, StateIndicator
 from ui.main_window import MainWindow
+from ui.onboarding import OnboardingWizard
 from ui.setup_dialog import ApiKeyDialog
 from core.hotkey import HotkeyListener
 from core.recorder import AudioRecorder
@@ -20,7 +21,7 @@ from core.formatter import Formatter, detect_command
 from core.commander import Commander
 from core.injector import inject_text
 from core.analytics import log_activation
-from core.config import get_api_key, set_api_key, get_hotkey
+from core.config import get_api_key, set_api_key, get_hotkey, get_onboarded
 from core.autostart import enable as autostart_enable
 from auth.session import is_authenticated, clear_session
 from auth.server import run_server
@@ -74,6 +75,7 @@ def _ensure_api_key(app: QApplication) -> str:
 def main():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
+    app.setWindowIcon(QIcon(_resource_path("icon.png")))
 
     api_key = _ensure_api_key(app)
     os.environ["OPENAI_API_KEY"] = api_key
@@ -87,8 +89,8 @@ def main():
 
     # --- System tray icon ---
 
-    logo_path = _resource_path("logo.png")
-    tray_icon = QSystemTrayIcon(QIcon(logo_path), app)
+    icon_path = _resource_path("icon.png")
+    tray_icon = QSystemTrayIcon(QIcon(icon_path), app)
 
     tray_menu = QMenu()
     open_action = QAction("Open Vocalix")
@@ -225,14 +227,21 @@ def main():
 
         print(f"[vocalix] Injecting: {text!r}", flush=True)
         hotkey.suppress(True)
-        try:
-            inject_text(text)
-            log_activation()
-        except Exception as exc:
-            print(f"[vocalix] Inject error: {exc}", flush=True)
-        finally:
+
+        def _inject():
+            try:
+                inject_text(text)
+                log_activation()
+            except Exception as exc:
+                print(f"[vocalix] Inject error: {exc}", flush=True)
+            finally:
+                _dispatch.put((_after_inject, ()))
+
+        def _after_inject():
             hotkey.suppress(False)
-        pill.set_state(StateIndicator.IDLE)
+            pill.set_state(StateIndicator.IDLE)
+
+        threading.Thread(target=_inject, daemon=True).start()
 
     def on_error(msg: str):
         print(f"[vocalix] error: {msg}", flush=True)
@@ -288,10 +297,25 @@ def main():
 
     window.signed_out.connect(on_signed_out)
 
-    # --- Launch ---
+    # --- Onboarding / Launch ---
 
-    show_app()
-    hotkey.start()
+    needs_onboarding = not get_onboarded()
+
+    if needs_onboarding:
+        wizard = OnboardingWizard()
+        wizard.hotkey_changed.connect(lambda key: hotkey.restart(key))
+
+        def _on_onboarding_done():
+            wizard.hide()
+            show_app()
+
+        wizard.finished.connect(_on_onboarding_done)
+        wizard.show()
+        pill.show()
+        hotkey.start()
+    else:
+        show_app()
+        hotkey.start()
 
     exit_code = app.exec_()
     hotkey.stop()

@@ -53,6 +53,16 @@ def set_hotkey(key: str):
     _save(data)
 
 
+def get_onboarded() -> bool:
+    return _load().get("onboarded", False)
+
+
+def set_onboarded(value: bool = True):
+    data = _load()
+    data["onboarded"] = value
+    _save(data)
+
+
 def get_supabase_url() -> str:
     return os.getenv("SUPABASE_URL", _SUPABASE_URL_DEFAULT)
 

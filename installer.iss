@@ -10,16 +10,17 @@ OutputBaseFilename=Vocalix-V1-Setup
 OutputDir=.
 Compression=lzma2
 SolidCompression=yes
-SetupIconFile=
+SetupIconFile=icon.ico
 PrivilegesRequired=lowest
 WizardStyle=modern
 
 [Files]
 Source: "dist\Vocalix\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\Vocalix"; Filename: "{app}\Vocalix.exe"
-Name: "{autodesktop}\Vocalix"; Filename: "{app}\Vocalix.exe"; Tasks: desktopicon
+Name: "{group}\Vocalix"; Filename: "{app}\Vocalix.exe"; IconFilename: "{app}\icon.ico"
+Name: "{autodesktop}\Vocalix"; Filename: "{app}\Vocalix.exe"; IconFilename: "{app}\icon.ico"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"
